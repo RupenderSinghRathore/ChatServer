@@ -6,16 +6,16 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func (s *serverStruct) broadcast() {
+func (app *application) broadcast() {
 	for {
 		messobj := <-messChan
 		msg := fmt.Sprintf("%v : %v", messobj.user, string(messobj.message))
-		for conn := range s.clients {
+		for conn := range app.clients {
 			if conn != messobj.conn {
 				if err := conn.WriteMessage(websocket.TextMessage, []byte(msg)); err != nil {
-					s.logger.Error(err.Error())
+					app.logger.Error(err.Error())
 					mutex.Lock()
-					delete(s.clients, conn)
+					delete(app.clients, conn)
 					mutex.Unlock()
 				}
 			}

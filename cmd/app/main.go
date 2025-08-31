@@ -9,7 +9,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type serverStruct struct {
+type application struct {
 	clients  map[*websocket.Conn]bool
 	logger   *slog.Logger
 	serve    *http.Server
@@ -23,7 +23,7 @@ var (
 
 func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	server := serverStruct{
+	app := application{
 		logger: logger,
 		upgrader: websocket.Upgrader{
 			WriteBufferSize: 1024,
@@ -32,15 +32,15 @@ func main() {
 		clients: make(map[*websocket.Conn]bool),
 	}
 
-	go server.broadcast()
+	go app.broadcast()
 
-	mux := server.newRouter()
+	mux := app.newRouter()
 
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
-	logger.Info("Starting started", "port", port)
+	logger.Info("Starting server", "port", port)
 	err := http.ListenAndServe("0.0.0.0:"+port, mux)
-	server.logger.Error(err.Error())
+	app.logger.Error(err.Error())
 }
