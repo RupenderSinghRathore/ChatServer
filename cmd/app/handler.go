@@ -1,18 +1,25 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
+	"os"
+	"runtime/debug"
 	"time"
 
 	"github.com/gorilla/websocket"
 )
 
 func (app application) connect(w http.ResponseWriter, r *http.Request) {
-	user := r.Header["User"][0]
+	users, ok := r.Header["User"]
+	if !ok || len(users) < 1 {
+		app.serverError(w, "Bad Request")
+		return
+	}
+	user := users[0]
 	conn, err := app.upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		http.Error(w, "Couldn't upgrade to websocket", http.StatusInternalServerError)
-		app.logger.Error(err.Error())
+		app.serverError(w, err.Error())
 	}
 	mutex.Lock()
 	app.clients[conn] = true
@@ -57,4 +64,10 @@ func (app application) closeConn(conn *websocket.Conn, code int, reason string) 
 		}
 	}
 	app.logger.Info("Conn closed gracefully.")
+}
+
+func (app application) serverError(w http.ResponseWriter, errString string) {
+	http.Error(w, "NOT FOUND", http.StatusInternalServerError)
+	app.logger.Error(errString)
+	fmt.Fprintf(os.Stdout, "trace: %s\n", string(debug.Stack()))
 }
